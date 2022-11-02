@@ -1,55 +1,100 @@
-# OBS Plugin Template
+# Source Defaults for OBS Studio
 
-## Introduction
+An OBS Studio Plugin that lets you set a source as a "default source". Created
+sources of the same type will get the settings from the configured default
+source.
 
-This plugin is meant to make it easy to quickstart development of new OBS plugins. It includes:
+## Installation
 
-- The CMake project file
-- Boilerplate plugin source code
-- GitHub Actions workflows and repository actions
-- Build scripts for Windows, macOS, and Linux
+Binaries for Windows, MacOS, and Linux are available in the [Releases](https://github.com/CodeYan01/source-defaults/releases) section.
 
-## Configuring
+## Usage
 
-Open `buildspec.json` and change the name and version of the plugin accordingly. This is also where the obs-studio version as well as the pre-built dependencies for Windows and macOS are defined. Use a release version (with associated checksums) from a recent [obs-deps release](https://github.com/obsproject/obs-deps/releases).
+1. Create a source that will contain the default settings. It is recommended that
+you put all default sources in a "Defaults" scene for organization.
+2. Configure the new source with all the settings you want to be applied to
+new sources of the same type.
+3. Add a Source Defaults filter to the source. This will copy the source's
+settings to new sources of the same type (i.e. if you added it to a Media
+Source, only new Media Sources will be affected).
+4. Configure the filter. By default, all the options are on, but you may turn
+off some of the options if you do not want all settings to be copied over.
+5. Repeat steps 1-4 if you want to set the defaults for other source types.
 
-Next, open `CMakeLists.txt` and edit the following lines at the beginning:
+## Features
 
-```cmake
-project(obs-plugintemplate VERSION 1.0.0)
+The Source Defaults filter can copy the following settings:
+- Properties
+- Filters
+- Audio Monitoring Type
+- Volume
+- Muted/Unmuted
+- Stereo Balance
+- Sync Offset
+- Audio Tracks
 
-set(PLUGIN_AUTHOR "Your Name Here")
+For sources without audio, only Properties and Filters are available.
 
-set(LINUX_MAINTAINER_EMAIL "me@contoso.com")
-```
+## FAQ
+*Q:* What if I want to use the normal defaults instead of the one I configured?
 
-The build scripts (contained in the `.github/scripts` directory) will update the `project` line automatically based on values from the `buildspec.json` file. If the scripts are not used, these changes need to be done manually.
+*A1:* You can click the Defaults button in the Properties window of the new source
+to get the usual defaults. For filters, you could delete the added ones.
 
-## GitHub Actions & CI
+*A2:* If you want to temporarily turn off the Source Defaults plugin,
+you can go to Settings > Hotkeys in OBS and assign hotkeys to the "Show/Hide
+Source Defaults" on the source it is added to.
 
-The scripts contained in `github/scripts` can be used to build and package the plugin and take care of setting up obs-studio as well as its own dependencies. A default workflow for GitHub Actions is also provided and will use these scripts.
 
-### Retrieving build artifacts
+*Q:* Help, when I add a video capture device, the video capture sources freeze!
 
-Each build produces installers and packages that you can use for testing and releases. These artifacts can be found on the action result page via the "Actions" tab in your GitHub repository.
+*A:* Most cameras can only be accessed by one app/process/source. You'll have to
+change the camera, or just copy the source and "Paste (Reference)" the source.
+If you add a Source Defaults filter on a video capture device, you can also
+deactivate it, if you won't use the default video capture device source, so new
+sources that get the same camera as the default will still work.
 
-#### Building a Release
 
-Simply create and push a tag and GitHub Actions will run the pipeline in Release Mode. This mode uses the tag as its version number instead of the git ref in normal mode.
+*Q1:* Why isn't the Source Defaults filter copied over to new sources?
 
-### Signing and Notarizing on macOS
+*Q2:* Can I add two Source Defaults filters on the same source type?
 
-On macOS, Release Mode builds can be signed and sent to Apple for notarization if the necessary codesigning credentials are added as secrets to your repository. **You'll need a paid Apple Developer Account for this.**
+*A:* Only one Source Defaults filter *per source type* will work, so it does not
+make sense that new sources will also get the Source Defaults filter.
 
-- On your Apple Developer dashboard, go to "Certificates, IDs & Profiles" and create two signing certificates:
-    - One of the "Developer ID Application" type. It will be used to sign the plugin's binaries
-    - One of the "Developer ID Installer" type. It will be used to sign the plugin's installer
-- Using the Keychain app on macOS, export these two certificates and keys into a .p12 file **protected with a strong password**
-- Encode the .p12 file into its base64 representation by running `base64 YOUR_P12_FILE`
-- Add the following secrets in your Github repository settings:
-    - `MACOS_SIGNING_APPLICATION_IDENTITY`: Name of the "Developer ID Application" signing certificate generated earlier
-    - `MACOS_SIGNING_INSTALLER_IDENTITY`: Name of "Developer ID Installer" signing certificate generated earlier
-    - `MACOS_SIGNING_CERT`: Base64-encoded string generated above
-    - `MACOS_SIGNING_CERT_PASSWORD`: Password used to generate the .p12 certificate
-    - `MACOS_NOTARIZATION_USERNAME`: Your Apple Developer account's username
-    - `MACOS_NOTARIZATION_PASSWORD`: Your Apple Developer account's password (use a generated "app password" for this)
+
+*Q:* Why are all options enabled by default?
+
+*A:* Even if they are enabled by default, you could simply not change settings
+of the configured "default" source. For example, an audio source's default
+volume is already 100%, so even if the Source Defaults filter copy the volume,
+it effectively does not change the volume if the "default" source has 100%
+volume. So you can leave the "Volume" option of the filter enabled. The options
+are simply there if you want more customized functionality (and tell you which
+settings are copied).
+
+## Why?
+
+Here are a few sample use cases.
+
+1. Media sources default to Monitoring off, which is unintuitive and requires
+many clicks to enable monitoring. This is especially more important when you
+are streaming to video conferencing apps using the monitoring device set to a
+virtual cable.
+
+2. You can use the Audio Monitor filter to simulate multiple audio buses, which
+OBS currently lacks. Source Defaults can make it easier for you by copying
+Audio Monitor filters to new sources.
+
+3. Sometimes you just want sources to have other default properties. You would
+usually want to have "Close file when inactive" enabled on Media Sources so OBS
+does not use a lot of memory keeping all your media in memory.
+
+4. You might also want to have browser sources have "Control audio via OBS" by
+default.
+
+## Contact Me
+Although there is a Discussion tab in these forums, I would see your message
+faster if you ping me (@CodeYan) in the [OBS Discord server](https://discord.gg/obsproject),
+in #plugins-and-tools. Please do report bugs or if there are features you'd like
+to be added.
