@@ -11,7 +11,7 @@ set(PLUGIN_AUTHOR "Ian Rodriguez")
 
 # Replace `com.example.obs-plugin-template` with a unique Bundle ID for macOS releases (used both in
 # the installer and when submitting the installer for notarization)
-set(MACOS_BUNDLEID "com.source_defaults.${CMAKE_PROJECT_NAME}")
+set(MACOS_BUNDLEID "com.source-defaults.${CMAKE_PROJECT_NAME}")
 
 # Replace `me@contoso.com` with the maintainer email address you want to put in Linux packages
 set(LINUX_MAINTAINER_EMAIL "codeyan01@gmail.com")
