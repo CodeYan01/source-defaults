@@ -21,7 +21,7 @@ set(LINUX_MAINTAINER_EMAIL "codeyan01@gmail.com")
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/plugin-main.c)
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE src/source-defaults-filter.c)
 
-#   Import libobs as main plugin dependency
+# Import libobs as main plugin dependency
 find_package(libobs REQUIRED)
 include(cmake/ObsPluginHelpers.cmake)
 

@@ -28,9 +28,8 @@ extern struct obs_source_info source_defaults_video_info;
 extern struct obs_source_info source_defaults_audio_info;
 bool loaded = false;
 
-// obs_data_array_t *existing_sources; // so we can check if the created source is a new one
 static void source_defaults_frontend_event_cb(enum obs_frontend_event event,
-				       void *data)
+					      void *data)
 {
 	UNUSED_PARAMETER(data);
 	if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING ||
@@ -55,6 +54,5 @@ bool obs_module_load(void)
 
 void obs_module_unload()
 {
-	blog(LOG_INFO, "plugin unloaded", "");
-	// obs_data_array_release(existing_sources)
+	blog(LOG_INFO, "plugin unloaded");
 }
