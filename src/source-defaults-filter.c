@@ -18,14 +18,13 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 
 #include <obs-module.h>
 #include <util/dstr.h>
+#include <util/base.h>
 
 #include "plugin-macros.generated.h"
 
 // so that old sources don't return with an empty settings object,
 // thus letting us distinguish between "new" sources and recreated sources due to undo/redo
 #define ENCOUNTERED_KEY "com.source_defaults.encountered"
-
-#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 #define COPY_PROPERTIES 0
 #define COPY_FILTERS 1
@@ -53,7 +52,7 @@ static const char *option_labels[] = {
 struct source_defaults {
 	obs_source_t *source; // the filter itself
 	obs_source_t *parent_source;
-	bool options[ARRAY_SIZE(option_keys)];
+	bool options[OBS_COUNTOF(option_keys)];
 };
 
 static void enum_filters(obs_source_t *src, obs_source_t *filter, void *param)
@@ -74,7 +73,7 @@ static void log_changes(struct source_defaults *src, obs_source_t *dst)
 	dstr_cat(&log, "Applied ");
 
 	bool first_bool = true;
-	for (unsigned long i = 0; i < ARRAY_SIZE(option_keys); i++) {
+	for (size_t i = 0; i < OBS_COUNTOF(option_keys); i++) {
 		if (src->options[i]) {
 			if (first_bool) {
 				dstr_cat(&log, option_labels[i]);
@@ -204,7 +203,7 @@ static void source_created_cb(void *data, calldata_t *cd)
 static void source_defaults_update(void *data, obs_data_t *settings)
 {
 	struct source_defaults *src = data;
-	for (unsigned long i = 0; i < ARRAY_SIZE(option_keys); i++) {
+	for (size_t i = 0; i < OBS_COUNTOF(option_keys); i++) {
 		src->options[i] = obs_data_get_bool(settings, option_keys[i]);
 	}
 }
@@ -233,7 +232,7 @@ static obs_properties_t *source_defaults_properties(void *data)
 	src->parent_source = obs_filter_get_parent(src->source);
 	if (obs_source_get_output_flags(src->parent_source) &
 	    OBS_SOURCE_AUDIO) {
-		for (unsigned long i = 2; i < ARRAY_SIZE(option_keys); i++) {
+		for (size_t i = 2; i < OBS_COUNTOF(option_keys); i++) {
 			obs_properties_add_bool(props, option_keys[i],
 						option_labels[i]);
 		}
@@ -244,7 +243,7 @@ static obs_properties_t *source_defaults_properties(void *data)
 
 static void source_defaults_get_defaults(obs_data_t *settings)
 {
-	for (unsigned long i = 0; i < ARRAY_SIZE(option_keys); i++) {
+	for (size_t i = 0; i < OBS_COUNTOF(option_keys); i++) {
 		obs_data_set_default_bool(settings, option_keys[i], true);
 	}
 }
