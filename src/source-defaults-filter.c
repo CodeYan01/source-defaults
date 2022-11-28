@@ -99,7 +99,7 @@ static void source_created_cb(void *data, calldata_t *cd)
 	}
 	struct source_defaults *src = data;
 	obs_source_t *dst = (obs_source_t *)calldata_ptr(cd, "source");
-	bool already_encountered;
+	bool already_encountered = false;
 
 	src->parent_source = obs_filter_get_parent(src->source);
 
@@ -133,7 +133,14 @@ static void source_created_cb(void *data, calldata_t *cd)
 	if (!already_encountered) {
 		const char *dst_properties_json =
 			obs_data_get_json(dst_properties);
-		already_encountered = strcmp(dst_properties_json, "{}") != 0;
+		const char *dst_id = obs_source_get_unversioned_id(dst);
+
+		// Except media sources because drag-and-drop already
+		// sets properties before the signal is propagated
+		if (strcmp(dst_id, "ffmpeg_source") != 0) {
+			already_encountered =
+				strcmp(dst_properties_json, "{}") != 0;
+		}
 		// If the new source has non-default settings (not "{}")
 		// consider it already encountered, but still write the
 		// ENCOUNTERED_KEY, so that if the user resets its properties
