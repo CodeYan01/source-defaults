@@ -98,3 +98,6 @@ Although there is a Discussion tab in these forums, I would see your message
 faster if you ping me (@CodeYan) in the [OBS Discord server](https://discord.gg/obsproject),
 in #plugins-and-tools. Please do report bugs or if there are features you'd like
 to be added.
+
+## Donations
+You can donate to me through [Paypal](https://www.paypal.com/donate/?hosted_button_id=S9WJDUDB8CK5S) to support my development. Thank you!
