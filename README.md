@@ -93,6 +93,10 @@ does not use a lot of memory keeping all your media in memory.
 4. You might also want to have browser sources have "Control audio via OBS" by
 default.
 
+5. Maybe you are getting tired of having to press Ctrl+F whenever you add a new
+media source. You can use this plugin to make it so Fit to Screen is applied to
+new ones. Remember to first set the Parent Scene in the filter settings.
+
 ## Contact Me
 Although there is a Discussion tab in these forums, I would see your message
 faster if you ping me (@CodeYan) in the [OBS Discord server](https://discord.gg/obsproject),
