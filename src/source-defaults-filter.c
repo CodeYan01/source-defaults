@@ -117,6 +117,7 @@ struct sceneitem_find_data {
 /* Forward declarations */
 static void source_defaults_frontend_event_cb(enum obs_frontend_event event,
 					      void *data);
+static void source_defaults_enable(void *data, calldata_t *cd);
 
 /************************/
 
@@ -465,6 +466,16 @@ static void source_created_cb(void *data, calldata_t *cd)
 		blog(LOG_WARNING,
 		     "Filter has no parent source, so new source was skipped.");
 		return;
+	} else if (obs_source_get_output_flags(parent_source) &
+		   OBS_SOURCE_COMPOSITE) {
+		signal_handler_t *sh = obs_get_signal_handler();
+		signal_handler_disconnect(sh, "source_create",
+					  source_created_cb, src);
+		sh = obs_source_get_signal_handler(src->source);
+		signal_handler_disconnect(sh, "enable", source_defaults_enable,
+					  src);
+		obs_enum_scenes(all_scenes_item_add_disconnect, src);
+		return;
 	}
 
 	// should be same type
@@ -621,6 +632,23 @@ static obs_properties_t *source_defaults_properties(void *data)
 {
 	struct source_defaults *src = data;
 	obs_properties_t *props = obs_properties_create();
+	obs_source_t *parent_source = obs_filter_get_parent(src->source);
+	obs_weak_source_release(src->parent_source_weak);
+	src->parent_source_weak = obs_source_get_weak_source(parent_source);
+	if (obs_source_get_output_flags(parent_source) & OBS_SOURCE_COMPOSITE) {
+		obs_properties_add_text(
+			props, "description",
+			"This filter can not be applied on scenes and groups",
+			OBS_TEXT_INFO);
+		signal_handler_t *sh = obs_get_signal_handler();
+		signal_handler_disconnect(sh, "source_create",
+					  source_created_cb, src);
+		sh = obs_source_get_signal_handler(src->source);
+		signal_handler_disconnect(sh, "enable", source_defaults_enable,
+					  src);
+		obs_enum_scenes(all_scenes_item_add_disconnect, src);
+		return props;
+	}
 	obs_properties_t *sceneitem_settings_group = obs_properties_create();
 
 	obs_properties_add_text(
@@ -633,9 +661,6 @@ static obs_properties_t *source_defaults_properties(void *data)
 					option_labels[i]);
 	}
 
-	obs_source_t *parent_source = obs_filter_get_parent(src->source);
-	obs_weak_source_release(src->parent_source_weak);
-	src->parent_source_weak = obs_source_get_weak_source(parent_source);
 	if (obs_source_get_output_flags(parent_source) & OBS_SOURCE_AUDIO) {
 		for (size_t i = 2; i < OBS_COUNTOF(option_keys); i++) {
 			obs_properties_add_bool(props, option_keys[i],
