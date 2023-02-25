@@ -260,7 +260,6 @@ static void log_changes(struct source_defaults *src, const char *src_name,
 	dstr_free(&log);
 }
 
-
 static void deferred_sceneitem_defaults(void *data)
 {
 	struct source_defaults *src = data;
@@ -648,8 +647,8 @@ static obs_properties_t *source_defaults_properties(void *data)
 				 sceneitem_settings_group);
 
 	obs_property_t *parent_scene_list = obs_properties_add_list(
-		props, S_PARENT_SCENE, T_PARENT_SCENE, OBS_COMBO_TYPE_LIST,
-		OBS_COMBO_FORMAT_STRING);
+		sceneitem_settings_group, S_PARENT_SCENE, T_PARENT_SCENE,
+		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
 	obs_property_set_long_description(parent_scene_list,
 					  T_PARENT_SCENE_LONG_DESC);
 	obs_property_list_add_string(parent_scene_list, "--select scene--", "");
