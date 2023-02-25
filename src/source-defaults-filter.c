@@ -102,6 +102,10 @@ struct source_defaults {
 	bool options[OBS_COUNTOF(option_keys)];
 	bool sceneitem_options[OBS_COUNTOF(sceneitem_option_keys)];
 	char *parent_scene_name;
+
+	// for deferred sceneitem visibility, because toggling right away doesn't work
+	obs_sceneitem_t *src_sceneitem;
+	obs_sceneitem_t *dst_sceneitem;
 };
 
 struct sceneitem_find_data {
@@ -127,12 +131,13 @@ static void enum_filters(obs_source_t *src, obs_source_t *filter, void *param)
 	}
 }
 
-static bool fill_scene_list(void *param, obs_source_t *scene)
+static void fill_scene_list(obs_property_t *scene_list)
 {
-	obs_property_t *scene_list = param;
-	const char *scene_name = obs_source_get_name(scene);
-	obs_property_list_add_string(scene_list, scene_name, scene_name);
-	return true;
+	char **scene_names = obs_frontend_get_scene_names();
+	for (char **temp = scene_names; *temp; temp++) {
+		obs_property_list_add_string(scene_list, *temp, *temp);
+	}
+	bfree(scene_names);
 }
 
 /**
@@ -212,6 +217,65 @@ static void copy_visibility_transitions(obs_sceneitem_t *src,
 	dstr_free(&new_name);
 }
 
+static void log_changes(struct source_defaults *src, const char *src_name,
+			const char *dst_name, bool sceneitem_settings)
+{
+	struct dstr log = {0};
+	bool first_bool = true;
+	dstr_init(&log);
+	dstr_cat(&log, "Applied ");
+
+	if (sceneitem_settings) {
+		for (size_t i = 0; i < OBS_COUNTOF(sceneitem_option_keys);
+		     i++) {
+			if (src->sceneitem_options[i]) {
+				if (first_bool) {
+					dstr_cat(&log,
+						 sceneitem_option_labels[i]);
+					first_bool = false;
+				} else {
+					dstr_catf(&log, ", %s",
+						  sceneitem_option_labels[i]);
+				}
+			}
+		}
+	} else {
+		for (size_t i = 0; i < OBS_COUNTOF(option_keys); i++) {
+			if (src->options[i]) {
+				if (first_bool) {
+					dstr_cat(&log, option_labels[i]);
+					first_bool = false;
+				} else {
+					dstr_catf(&log, ", %s",
+						  option_labels[i]);
+				}
+			}
+		}
+	}
+	if (!first_bool) {
+		dstr_catf(&log, " from '%s'", src_name);
+		dstr_catf(&log, " to '%s'", dst_name);
+		blog(LOG_INFO, "%s", log.array);
+	}
+	dstr_free(&log);
+}
+
+
+static void deferred_sceneitem_defaults(void *data)
+{
+	struct source_defaults *src = data;
+	if (!src->src_sceneitem || !src->dst_sceneitem)
+		return;
+	if (src->sceneitem_options[COPY_VISIBILITY]) {
+		bool visible = obs_sceneitem_visible(src->src_sceneitem);
+		obs_sceneitem_set_visible(src->dst_sceneitem, visible);
+		obs_sceneitem_release(src->src_sceneitem);
+		obs_sceneitem_release(src->dst_sceneitem);
+		src->src_sceneitem = NULL;
+		src->dst_sceneitem = NULL;
+	}
+}
+
 static void apply_sceneitem_defaults(void *data, obs_sceneitem_t *dst_sceneitem)
 {
 	struct source_defaults *src = data;
@@ -222,6 +286,8 @@ static void apply_sceneitem_defaults(void *data, obs_sceneitem_t *dst_sceneitem)
 	obs_source_t *parent_source =
 		obs_weak_source_get_source(src->parent_source_weak);
 	const char *parent_source_name = obs_source_get_name(parent_source);
+	const char *dst_source_name =
+		obs_source_get_name(obs_sceneitem_get_source(dst_sceneitem));
 
 	struct sceneitem_find_data *parent_find_data =
 		bzalloc(sizeof(struct sceneitem_find_data));
@@ -238,16 +304,31 @@ static void apply_sceneitem_defaults(void *data, obs_sceneitem_t *dst_sceneitem)
 					dst_sceneitem);
 			}
 			if (src->sceneitem_options[COPY_VISIBILITY]) {
+				// try to set it right away for less latency when possible
 				bool visible = obs_sceneitem_visible(
 					parent_find_data->found_sceneitem);
 				obs_sceneitem_set_visible(dst_sceneitem,
 							  visible);
+
+				obs_sceneitem_release(src->src_sceneitem);
+				obs_sceneitem_release(src->dst_sceneitem);
+				src->src_sceneitem =
+					parent_find_data->found_sceneitem;
+				src->dst_sceneitem = dst_sceneitem;
+				obs_sceneitem_addref(src->src_sceneitem);
+				obs_sceneitem_addref(src->dst_sceneitem);
+				obs_queue_task(OBS_TASK_GRAPHICS,
+					       deferred_sceneitem_defaults, src,
+					       false);
 			}
 			if (src->sceneitem_options[COPY_VISIBILITY_TRANSITIONS]) {
 				copy_visibility_transitions(
 					parent_find_data->found_sceneitem,
 					dst_sceneitem);
 			}
+
+			log_changes(src, parent_source_name, dst_source_name,
+				    true);
 		} else {
 			blog(LOG_WARNING,
 			     "Selected parent scene '%s' does not contain '%s',"
@@ -256,7 +337,7 @@ static void apply_sceneitem_defaults(void *data, obs_sceneitem_t *dst_sceneitem)
 		}
 	} else {
 		blog(LOG_WARNING,
-		     "Parent scene '%s' not found, Transform not copied.",
+		     "Parent scene '%s' not found, scene item settings not copied.",
 		     src->parent_scene_name);
 	}
 
@@ -264,32 +345,6 @@ static void apply_sceneitem_defaults(void *data, obs_sceneitem_t *dst_sceneitem)
 	bfree(parent_find_data);
 	obs_source_release(parent_scene_source);
 	obs_source_release(parent_source);
-}
-
-static void log_changes(struct source_defaults *src, const char *src_name,
-			const char *dst_name)
-{
-	struct dstr log = {0};
-	dstr_init(&log);
-	dstr_cat(&log, "Applied ");
-
-	bool first_bool = true;
-	for (size_t i = 0; i < OBS_COUNTOF(option_keys); i++) {
-		if (src->options[i]) {
-			if (first_bool) {
-				dstr_cat(&log, option_labels[i]);
-				first_bool = false;
-			} else {
-				dstr_catf(&log, ", %s", option_labels[i]);
-			}
-		}
-	}
-	if (!first_bool) {
-		dstr_catf(&log, " from '%s'", src_name);
-		dstr_catf(&log, " to '%s'", dst_name);
-		blog(LOG_INFO, "%s", log.array);
-	}
-	dstr_free(&log);
 }
 
 static void parent_scene_destroyed(void *data, calldata_t *cd)
@@ -510,7 +565,7 @@ static void source_created_cb(void *data, calldata_t *cd)
 		src->dst_source_weak = obs_source_get_weak_source(dst);
 	}
 	log_changes(src, obs_source_get_name(parent_source),
-		    obs_source_get_name(dst));
+		    obs_source_get_name(dst), false);
 }
 
 static void source_defaults_update(void *data, obs_data_t *settings)
@@ -526,7 +581,7 @@ static void source_defaults_update(void *data, obs_data_t *settings)
 	}
 	const char *new_name = obs_data_get_string(settings, S_PARENT_SCENE);
 	bool parent_scene_changed = strcmp(new_name, src->parent_scene_name) !=
-					    0;
+				    0;
 	bfree(src->parent_scene_name);
 	src->parent_scene_name = bstrdup(new_name);
 	if (loaded && parent_scene_changed) {
@@ -593,12 +648,12 @@ static obs_properties_t *source_defaults_properties(void *data)
 				 sceneitem_settings_group);
 
 	obs_property_t *parent_scene_list = obs_properties_add_list(
-		props, S_PARENT_SCENE, T_PARENT_SCENE,
-		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
+		props, S_PARENT_SCENE, T_PARENT_SCENE, OBS_COMBO_TYPE_LIST,
+		OBS_COMBO_FORMAT_STRING);
 	obs_property_set_long_description(parent_scene_list,
 					  T_PARENT_SCENE_LONG_DESC);
 	obs_property_list_add_string(parent_scene_list, "--select scene--", "");
-	obs_enum_scenes(fill_scene_list, parent_scene_list);
+	fill_scene_list(parent_scene_list);
 	for (size_t i = 0; i < OBS_COUNTOF(sceneitem_option_keys); i++) {
 		obs_properties_add_bool(sceneitem_settings_group,
 					sceneitem_option_keys[i],
