@@ -44,14 +44,19 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 
 #define S_SCENEITEM_SETTINGS "scene_item_settings"
 #define T_SCENEITEM_SETTINGS "Scene item settings"
-
 #define S_PARENT_SCENE "parent_scene"
-
 #define T_PARENT_SCENE "Parent Scene"
 #define T_PARENT_SCENE_LONG_DESC                                                         \
 	"Select the parent scene of the source that has this filter. "                   \
 	"The following settings of this source will be copied from the selected scene. " \
 	"If you have duplicates of this source, it will be copied from the bottommost one."
+
+#define S_NAME_SETTINGS "name_settings"
+#define T_NAME_SETTINGS "Source name settings"
+#define S_PREFIX "name_prefix"
+#define T_PREFIX "Prefix"
+#define S_PREFIX_NOT_YET_APPLIED "prefix_not_yet_applied"
+#define T_PREFIX_NOT_YET_APPLIED "Only if not yet applied"
 
 extern bool loaded;
 
@@ -106,6 +111,11 @@ struct source_defaults {
 	// for deferred sceneitem visibility, because toggling right away doesn't work
 	obs_sceneitem_t *src_sceneitem;
 	obs_sceneitem_t *dst_sceneitem;
+
+	/* source name settings */
+	bool apply_name_settings;
+	char *prefix;
+	bool prefix_if_not_yet_applied;
 };
 
 struct sceneitem_find_data {
@@ -253,6 +263,16 @@ static void log_changes(struct source_defaults *src, const char *src_name,
 			}
 		}
 	}
+	/* Source Name Settings */
+	if (src->apply_name_settings && strcmp(src->prefix, "") != 0) {
+		if (first_bool) {
+			dstr_cat(&log, T_PREFIX);
+			first_bool = false;
+		} else {
+			dstr_catf(&log, ", %s", T_PREFIX);
+		}
+	}
+
 	if (!first_bool) {
 		dstr_catf(&log, " from '%s'", src_name);
 		dstr_catf(&log, " to '%s'", dst_name);
@@ -574,8 +594,22 @@ static void source_created_cb(void *data, calldata_t *cd)
 		obs_weak_source_release(src->dst_source_weak);
 		src->dst_source_weak = obs_source_get_weak_source(dst);
 	}
-	log_changes(src, obs_source_get_name(parent_source),
-		    obs_source_get_name(dst), false);
+	if (src->apply_name_settings && strcmp(src->prefix, "") != 0) {
+		struct dstr new_name = {0};
+		bool should_apply = true;
+		dstr_copy(&new_name, obs_source_get_name(dst));
+		if (src->prefix_if_not_yet_applied) {
+			const char *found = dstr_find(&new_name, src->prefix);
+			should_apply = !found || (found - new_name.array != 0);
+		}
+		if (should_apply) {
+			dstr_insert(&new_name, 0, src->prefix);
+			obs_source_set_name(dst, new_name.array);
+		}
+		dstr_free(&new_name);
+	}
+	log_changes(src, obs_source_get_name(dst), obs_source_get_name(dst),
+		    false);
 }
 
 static void source_defaults_update(void *data, obs_data_t *settings)
@@ -614,6 +648,13 @@ static void source_defaults_update(void *data, obs_data_t *settings)
 			start_monitoring_parent_scene(src, parent_scene);
 		}
 	}
+
+	/* Source Name Settings */
+	src->apply_name_settings = obs_data_get_bool(settings, S_NAME_SETTINGS);
+	bfree(src->prefix);
+	src->prefix = bstrdup(obs_data_get_string(settings, S_PREFIX));
+	src->prefix_if_not_yet_applied =
+		obs_data_get_bool(settings, S_PREFIX_NOT_YET_APPLIED);
 }
 
 static void source_defaults_save(void *data, obs_data_t *settings)
@@ -650,6 +691,7 @@ static obs_properties_t *source_defaults_properties(void *data)
 		return props;
 	}
 	obs_properties_t *sceneitem_settings_group = obs_properties_create();
+	obs_properties_t *name_settings_group = obs_properties_create();
 
 	obs_properties_add_text(
 		props, "description",
@@ -667,10 +709,11 @@ static obs_properties_t *source_defaults_properties(void *data)
 						option_labels[i]);
 		}
 	}
+
+	/* Scene Item Settings */
 	obs_properties_add_group(props, S_SCENEITEM_SETTINGS,
 				 T_SCENEITEM_SETTINGS, OBS_GROUP_NORMAL,
 				 sceneitem_settings_group);
-
 	obs_property_t *parent_scene_list = obs_properties_add_list(
 		sceneitem_settings_group, S_PARENT_SCENE, T_PARENT_SCENE,
 		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
@@ -683,6 +726,14 @@ static obs_properties_t *source_defaults_properties(void *data)
 					sceneitem_option_keys[i],
 					sceneitem_option_labels[i]);
 	}
+
+	/* Source Name Prefix */
+	obs_properties_add_group(props, S_NAME_SETTINGS, T_NAME_SETTINGS,
+				 OBS_GROUP_CHECKABLE, name_settings_group);
+	obs_properties_add_text(name_settings_group, S_PREFIX, T_PREFIX,
+				OBS_TEXT_DEFAULT);
+	obs_properties_add_bool(name_settings_group, S_PREFIX_NOT_YET_APPLIED,
+				T_PREFIX_NOT_YET_APPLIED);
 	return props;
 }
 
@@ -695,6 +746,8 @@ static void source_defaults_get_defaults(obs_data_t *settings)
 		obs_data_set_default_bool(settings, sceneitem_option_keys[i],
 					  true);
 	}
+	obs_data_set_default_bool(settings, S_NAME_SETTINGS, true);
+	obs_data_set_default_bool(settings, S_PREFIX_NOT_YET_APPLIED, true);
 }
 
 static void _source_defaults_enable(struct source_defaults *src, bool enabled)
@@ -736,6 +789,7 @@ static void *source_defaults_create(obs_data_t *settings, obs_source_t *source)
 	struct source_defaults *src = bzalloc(sizeof(struct source_defaults));
 	src->source = source;
 	src->parent_scene_name = bstrdup("");
+	src->prefix = bstrdup("");
 
 	source_defaults_update(src, settings);
 
@@ -767,6 +821,9 @@ static void source_defaults_destroy(void *data)
 	obs_weak_source_release(src->parent_scene_weak);
 	obs_weak_source_release(src->dst_source_weak);
 	bfree(src->parent_scene_name);
+
+	/* Source Name Settings */
+	bfree(src->prefix);
 	bfree(data);
 }
 
