@@ -32,8 +32,23 @@ The Source Defaults filter can copy the following settings:
 - Stereo Balance
 - Sync Offset
 - Audio Tracks
+- Scene item settings
+    - Parent Scene Name
+    - Transform
+    - Show/Hide (Visibility)
+    - Show/Hide Transitions
+- Source name settings
+    - Prefix
+    - Option to apply prefix only if not yet applied
 
-For sources without audio, only Properties and Filters are available.
+For sources without audio, only Properties, Filters, Scene item settings, and
+Source name settings are available.
+
+To be able to copy scene item settings, you need to select the parent scene of
+the default source (because a source can be in multiple scenes). If there are
+duplicates of the defaults source, the bottommost one is used.
+
+Source name settings are only applied after the source is created.
 
 ## FAQ
 *Q:* What if I want to use the normal defaults instead of the one I configured?
@@ -96,6 +111,9 @@ default.
 5. Maybe you are getting tired of having to press Ctrl+F whenever you add a new
 media source. You can use this plugin to make it so Fit to Screen is applied to
 new ones. Remember to first set the Parent Scene in the filter settings.
+
+6. You want to prefix sources of the same type, so they appear in dropdown lists
+next to each other (e.g. "MS - Example Video") for Media Sources.
 
 ## Contact Me
 Although there is a Discussion tab in these forums, I would see your message
