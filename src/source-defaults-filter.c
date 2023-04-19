@@ -276,7 +276,7 @@ static void log_changes(struct source_defaults *src, const char *src_name,
 	if (!first_bool) {
 		dstr_catf(&log, " from '%s'", src_name);
 		dstr_catf(&log, " to '%s'", dst_name);
-		blog(LOG_INFO, "%s", log.array);
+		obs_log(LOG_INFO, "%s", log.array);
 	}
 	dstr_free(&log);
 }
@@ -350,13 +350,13 @@ static void apply_sceneitem_defaults(void *data, obs_sceneitem_t *dst_sceneitem)
 			log_changes(src, parent_source_name, dst_source_name,
 				    true);
 		} else {
-			blog(LOG_WARNING,
+			obs_log(LOG_WARNING,
 			     "Selected parent scene '%s' does not contain '%s',"
 			     " scene item settings not copied.",
 			     src->parent_scene_name, parent_source_name);
 		}
 	} else {
-		blog(LOG_WARNING,
+		obs_log(LOG_WARNING,
 		     "Parent scene '%s' not found, scene item settings not copied.",
 		     src->parent_scene_name);
 	}
@@ -483,7 +483,7 @@ static void source_created_cb(void *data, calldata_t *cd)
 	obs_weak_source_release(src->parent_source_weak);
 	src->parent_source_weak = obs_source_get_weak_source(parent_source);
 	if (!parent_source) {
-		blog(LOG_WARNING,
+		obs_log(LOG_WARNING,
 		     "Filter has no parent source, so new source was skipped.");
 		return;
 	} else if (obs_source_get_output_flags(parent_source) &
@@ -507,16 +507,16 @@ static void source_created_cb(void *data, calldata_t *cd)
 		return;
 	}
 
-	/* We have to distinguish between new sources and 
-	   sources that are only recreated due to undo, 
+	/* We have to distinguish between new sources and
+	   sources that are only recreated due to undo,
 	   otherwise settings will be copied over to old sources
-	   that are simply re-created. 
-	   
+	   that are simply re-created.
+
 	   However, if you delete a source that was created prior to having Source Defaults,
 	   and then undo it, it will be considered a new source.
 	   */
 	obs_data_t *dst_properties = obs_source_get_settings(dst);
-	blog(LOG_DEBUG, "dst json: %s", obs_data_get_json(dst_properties));
+	obs_log(LOG_DEBUG, "dst json: %s", obs_data_get_json(dst_properties));
 	already_encountered =
 		obs_data_get_bool(dst_properties, ENCOUNTERED_KEY);
 	if (!already_encountered) {
@@ -556,7 +556,7 @@ static void source_created_cb(void *data, calldata_t *cd)
 
 #ifndef NDEBUG
 		dst_properties = obs_source_get_settings(dst);
-		blog(LOG_DEBUG, "dst json2: %s",
+		obs_log(LOG_DEBUG, "dst json2: %s",
 		     obs_data_get_json(dst_properties));
 		obs_data_release(dst_properties);
 #endif // !NDEBUG
@@ -827,7 +827,7 @@ static void source_defaults_destroy(void *data)
 	bfree(data);
 }
 
-/* OBS doesn't allow creating a filter that will show up for both 
+/* OBS doesn't allow creating a filter that will show up for both
 	video and audio filters, so we define two. */
 
 struct obs_source_info source_defaults_video_info = {

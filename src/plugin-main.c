@@ -18,8 +18,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 
 #include <obs-frontend-api.h>
 #include <obs-module.h>
-
-#include "plugin-macros.generated.h"
+#include <plugin-support.h>
 
 OBS_DECLARE_MODULE()
 OBS_MODULE_USE_DEFAULT_LOCALE(PLUGIN_NAME, "en-US")
@@ -42,7 +41,7 @@ static void source_defaults_frontend_event_cb(enum obs_frontend_event event,
 
 bool obs_module_load(void)
 {
-	blog(LOG_INFO, "plugin loaded successfully (version %s)",
+	obs_log(LOG_INFO, "plugin loaded successfully (version %s)",
 	     PLUGIN_VERSION);
 	obs_register_source(&source_defaults_video_info);
 	obs_register_source(&source_defaults_audio_info);
@@ -52,7 +51,7 @@ bool obs_module_load(void)
 	return true;
 }
 
-void obs_module_unload()
+void obs_module_unload(void)
 {
-	blog(LOG_INFO, "plugin unloaded");
+	obs_log(LOG_INFO, "plugin unloaded");
 }
