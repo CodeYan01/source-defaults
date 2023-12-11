@@ -37,9 +37,10 @@
         }
     },
     "name": "source-defaults",
+    "displayName": "Source Defaults",
     "version": "1.1.1",
     "author": "Ian Rodriguez",
-    "website": "https://github.com/CodeYan01/media-playlist-source",
+    "website": "https://github.com/CodeYan01/source-defaults",
     "email": "ianlemuelr@gmail.com",
     "uuids": {
         "windowsApp": "00000000-0000-0000-0000-000000000000"
