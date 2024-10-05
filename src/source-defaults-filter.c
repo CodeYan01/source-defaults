@@ -526,7 +526,7 @@ static void source_created_cb(void *data, calldata_t *cd)
 
 		// Except media sources because drag-and-drop already
 		// sets properties before the signal is propagated
-		if (strcmp(dst_id, "ffmpeg_source") != 0) {
+		if (strcmp(dst_id, "ffmpeg_source") != 0 || strcmp(dst_id, "image_source") != 0) {
 			already_encountered =
 				strcmp(dst_properties_json, "{}") != 0;
 		}
