@@ -41,8 +41,7 @@ static void source_defaults_frontend_event_cb(enum obs_frontend_event event,
 
 bool obs_module_load(void)
 {
-	obs_log(LOG_INFO, "plugin loaded successfully (version %s)",
-	     PLUGIN_VERSION);
+	obs_log(LOG_INFO, "plugin loaded successfully (version %s)", PLUGIN_VERSION);
 	obs_register_source(&source_defaults_video_info);
 	obs_register_source(&source_defaults_audio_info);
 
