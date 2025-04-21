@@ -27,12 +27,10 @@ extern struct obs_source_info source_defaults_video_info;
 extern struct obs_source_info source_defaults_audio_info;
 bool loaded = false;
 
-static void source_defaults_frontend_event_cb(enum obs_frontend_event event,
-					      void *data)
+static void source_defaults_frontend_event_cb(enum obs_frontend_event event, void *data)
 {
 	UNUSED_PARAMETER(data);
-	if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING ||
-	    event == OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED) {
+	if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING || event == OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED) {
 		loaded = true;
 	} else if (event == OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGING) {
 		loaded = false;
@@ -45,8 +43,7 @@ bool obs_module_load(void)
 	obs_register_source(&source_defaults_video_info);
 	obs_register_source(&source_defaults_audio_info);
 
-	obs_frontend_add_event_callback(source_defaults_frontend_event_cb,
-					NULL);
+	obs_frontend_add_event_callback(source_defaults_frontend_event_cb, NULL);
 	return true;
 }
 

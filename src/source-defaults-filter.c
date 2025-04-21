@@ -125,8 +125,7 @@ struct sceneitem_find_data {
 };
 
 /* Forward declarations */
-static void source_defaults_frontend_event_cb(enum obs_frontend_event event,
-					      void *data);
+static void source_defaults_frontend_event_cb(enum obs_frontend_event event, void *data);
 static void source_defaults_enable(void *data, calldata_t *cd);
 
 /************************/
@@ -136,8 +135,7 @@ static void enum_filters(obs_source_t *src, obs_source_t *filter, void *param)
 	UNUSED_PARAMETER(src);
 	obs_source_t *dst = param;
 	const char *filter_id = obs_source_get_unversioned_id(filter);
-	if (strcmp(filter_id, "source_defaults_video") != 0 &&
-	    strcmp(filter_id, "source_defaults_audio") != 0) {
+	if (strcmp(filter_id, "source_defaults_video") != 0 && strcmp(filter_id, "source_defaults_audio") != 0) {
 		obs_source_copy_single_filter(dst, filter);
 	}
 }
@@ -155,8 +153,7 @@ static void fill_scene_list(obs_property_t *scene_list)
  * Finds the first sceneitem that has the specified source, because the `source_create`
  * signal only returns the source.
  */
-static bool find_source_sceneitem(obs_scene_t *scene, obs_sceneitem_t *item,
-				  void *param)
+static bool find_source_sceneitem(obs_scene_t *scene, obs_sceneitem_t *item, void *param)
 {
 	UNUSED_PARAMETER(scene);
 	struct sceneitem_find_data *find_data = param;
@@ -172,11 +169,9 @@ static bool find_source_sceneitem(obs_scene_t *scene, obs_sceneitem_t *item,
 static bool find_source_sceneitem_all_scenes(void *param, obs_source_t *scene)
 {
 	struct sceneitem_find_data *find_data = param;
-	if (strcmp(obs_source_get_name(scene),
-		   obs_source_get_name(find_data->scene_to_skip)) == 0)
+	if (strcmp(obs_source_get_name(scene), obs_source_get_name(find_data->scene_to_skip)) == 0)
 		return true;
-	obs_scene_enum_items(obs_scene_from_source(scene),
-			     find_source_sceneitem, find_data);
+	obs_scene_enum_items(obs_scene_from_source(scene), find_source_sceneitem, find_data);
 	if (find_data->found_sceneitem)
 		return false;
 	return true;
@@ -204,32 +199,27 @@ static void copy_transform(obs_sceneitem_t *src, obs_sceneitem_t *dst)
 	obs_sceneitem_defer_update_end(dst);
 }
 
-static void copy_visibility_transitions(obs_sceneitem_t *src,
-					obs_sceneitem_t *dst)
+static void copy_visibility_transitions(obs_sceneitem_t *src, obs_sceneitem_t *dst)
 {
 	struct dstr new_name = {0};
-	const char *dst_name =
-		obs_source_get_name(obs_sceneitem_get_source(dst));
+	const char *dst_name = obs_source_get_name(obs_sceneitem_get_source(dst));
 	for (size_t i = 0; i < 2; i++) {
 		dstr_copy(&new_name, dst_name);
-		dstr_cat(&new_name,
-			 i ? " Show Transition" : " Hide Transition");
+		dstr_cat(&new_name, i ? " Show Transition" : " Hide Transition");
 
 		obs_source_t *transition = obs_sceneitem_get_transition(src, i);
-		obs_source_t *transition_copy =
-			obs_source_duplicate(transition, new_name.array, false);
+		obs_source_t *transition_copy = obs_source_duplicate(transition, new_name.array, false);
 		obs_sceneitem_set_transition(dst, i, transition_copy);
 		obs_source_release(transition_copy);
 
-		uint32_t duration =
-			obs_sceneitem_get_transition_duration(src, i);
+		uint32_t duration = obs_sceneitem_get_transition_duration(src, i);
 		obs_sceneitem_set_transition_duration(dst, i, duration);
 	}
 	dstr_free(&new_name);
 }
 
-static void log_changes(struct source_defaults *src, const char *src_name,
-			const char *dst_name, bool sceneitem_settings)
+static void log_changes(struct source_defaults *src, const char *src_name, const char *dst_name,
+			bool sceneitem_settings)
 {
 	struct dstr log = {0};
 	bool first_bool = true;
@@ -237,16 +227,13 @@ static void log_changes(struct source_defaults *src, const char *src_name,
 	dstr_cat(&log, "Applied ");
 
 	if (sceneitem_settings) {
-		for (size_t i = 0; i < OBS_COUNTOF(sceneitem_option_keys);
-		     i++) {
+		for (size_t i = 0; i < OBS_COUNTOF(sceneitem_option_keys); i++) {
 			if (src->sceneitem_options[i]) {
 				if (first_bool) {
-					dstr_cat(&log,
-						 sceneitem_option_labels[i]);
+					dstr_cat(&log, sceneitem_option_labels[i]);
 					first_bool = false;
 				} else {
-					dstr_catf(&log, ", %s",
-						  sceneitem_option_labels[i]);
+					dstr_catf(&log, ", %s", sceneitem_option_labels[i]);
 				}
 			}
 		}
@@ -257,8 +244,7 @@ static void log_changes(struct source_defaults *src, const char *src_name,
 					dstr_cat(&log, option_labels[i]);
 					first_bool = false;
 				} else {
-					dstr_catf(&log, ", %s",
-						  option_labels[i]);
+					dstr_catf(&log, ", %s", option_labels[i]);
 				}
 			}
 		}
@@ -300,65 +286,49 @@ static void apply_sceneitem_defaults(void *data, obs_sceneitem_t *dst_sceneitem)
 {
 	struct source_defaults *src = data;
 	// First get the parent scene of the default source
-	obs_source_t *parent_scene_source =
-		obs_weak_source_get_source(src->parent_scene_weak);
+	obs_source_t *parent_scene_source = obs_weak_source_get_source(src->parent_scene_weak);
 	obs_scene_t *parent_scene = obs_scene_from_source(parent_scene_source);
-	obs_source_t *parent_source =
-		obs_weak_source_get_source(src->parent_source_weak);
+	obs_source_t *parent_source = obs_weak_source_get_source(src->parent_source_weak);
 	const char *parent_source_name = obs_source_get_name(parent_source);
-	const char *dst_source_name =
-		obs_source_get_name(obs_sceneitem_get_source(dst_sceneitem));
+	const char *dst_source_name = obs_source_get_name(obs_sceneitem_get_source(dst_sceneitem));
 
-	struct sceneitem_find_data *parent_find_data =
-		bzalloc(sizeof(struct sceneitem_find_data));
+	struct sceneitem_find_data *parent_find_data = bzalloc(sizeof(struct sceneitem_find_data));
 
 	if (parent_scene) {
 		parent_find_data->source_to_find = parent_source;
-		obs_scene_enum_items(parent_scene, find_source_sceneitem,
-				     parent_find_data);
+		obs_scene_enum_items(parent_scene, find_source_sceneitem, parent_find_data);
 		if (parent_find_data->found_sceneitem) {
 			// Apply source defaults
 			if (src->sceneitem_options[COPY_TRANSFORM]) {
-				copy_transform(
-					parent_find_data->found_sceneitem,
-					dst_sceneitem);
+				copy_transform(parent_find_data->found_sceneitem, dst_sceneitem);
 			}
 			if (src->sceneitem_options[COPY_VISIBILITY]) {
 				// try to set it right away for less latency when possible
-				bool visible = obs_sceneitem_visible(
-					parent_find_data->found_sceneitem);
-				obs_sceneitem_set_visible(dst_sceneitem,
-							  visible);
+				bool visible = obs_sceneitem_visible(parent_find_data->found_sceneitem);
+				obs_sceneitem_set_visible(dst_sceneitem, visible);
 
 				obs_sceneitem_release(src->src_sceneitem);
 				obs_sceneitem_release(src->dst_sceneitem);
-				src->src_sceneitem =
-					parent_find_data->found_sceneitem;
+				src->src_sceneitem = parent_find_data->found_sceneitem;
 				src->dst_sceneitem = dst_sceneitem;
 				obs_sceneitem_addref(src->src_sceneitem);
 				obs_sceneitem_addref(src->dst_sceneitem);
-				obs_queue_task(OBS_TASK_GRAPHICS,
-					       deferred_sceneitem_defaults, src,
-					       false);
+				obs_queue_task(OBS_TASK_GRAPHICS, deferred_sceneitem_defaults, src, false);
 			}
 			if (src->sceneitem_options[COPY_VISIBILITY_TRANSITIONS]) {
-				copy_visibility_transitions(
-					parent_find_data->found_sceneitem,
-					dst_sceneitem);
+				copy_visibility_transitions(parent_find_data->found_sceneitem, dst_sceneitem);
 			}
 
-			log_changes(src, parent_source_name, dst_source_name,
-				    true);
+			log_changes(src, parent_source_name, dst_source_name, true);
 		} else {
 			obs_log(LOG_WARNING,
-			     "Selected parent scene '%s' does not contain '%s',"
-			     " scene item settings not copied.",
-			     src->parent_scene_name, parent_source_name);
+				"Selected parent scene '%s' does not contain '%s',"
+				" scene item settings not copied.",
+				src->parent_scene_name, parent_source_name);
 		}
 	} else {
-		obs_log(LOG_WARNING,
-		     "Parent scene '%s' not found, scene item settings not copied.",
-		     src->parent_scene_name);
+		obs_log(LOG_WARNING, "Parent scene '%s' not found, scene item settings not copied.",
+			src->parent_scene_name);
 	}
 
 	obs_sceneitem_release(parent_find_data->found_sceneitem);
@@ -386,8 +356,7 @@ static void parent_scene_renamed(void *data, calldata_t *cd)
 	obs_source_save(src->source);
 }
 
-static void start_monitoring_parent_scene(struct source_defaults *src,
-					  obs_scene_t *scene)
+static void start_monitoring_parent_scene(struct source_defaults *src, obs_scene_t *scene)
 {
 	obs_source_t *source = obs_scene_get_source(scene);
 	signal_handler_t *sh = obs_source_get_signal_handler(source);
@@ -395,8 +364,7 @@ static void start_monitoring_parent_scene(struct source_defaults *src,
 	signal_handler_connect(sh, "rename", parent_scene_renamed, src);
 }
 
-static void stop_monitoring_parent_scene(struct source_defaults *src,
-					 obs_scene_t *scene)
+static void stop_monitoring_parent_scene(struct source_defaults *src, obs_scene_t *scene)
 {
 	obs_source_t *source = obs_scene_get_source(scene);
 	signal_handler_t *sh = obs_source_get_signal_handler(source);
@@ -407,8 +375,7 @@ static void stop_monitoring_parent_scene(struct source_defaults *src,
 static void scene_item_add_cb(void *data, calldata_t *cd)
 {
 	struct source_defaults *src = data;
-	obs_source_t *dst_source =
-		obs_weak_source_get_source(src->dst_source_weak);
+	obs_source_t *dst_source = obs_weak_source_get_source(src->dst_source_weak);
 	if (!dst_source)
 		return;
 
@@ -441,27 +408,22 @@ static bool all_scenes_item_add_disconnect(void *data, obs_source_t *scene)
 	return true;
 }
 
-static void source_defaults_frontend_event_cb(enum obs_frontend_event event,
-					      void *data)
+static void source_defaults_frontend_event_cb(enum obs_frontend_event event, void *data)
 {
 	struct source_defaults *src = data;
-	if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING ||
-	    event == OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED) {
+	if (event == OBS_FRONTEND_EVENT_FINISHED_LOADING || event == OBS_FRONTEND_EVENT_SCENE_COLLECTION_CHANGED) {
 		obs_enum_scenes(all_scenes_item_add, src);
 
 		// set default scene after all sources are loaded
-		obs_scene_t *parent_scene =
-			obs_get_scene_by_name(src->parent_scene_name);
+		obs_scene_t *parent_scene = obs_get_scene_by_name(src->parent_scene_name);
 		obs_weak_source_release(src->parent_scene_weak);
 		if (parent_scene) {
-			src->parent_scene_weak = obs_source_get_weak_source(
-				obs_scene_get_source(parent_scene));
+			src->parent_scene_weak = obs_source_get_weak_source(obs_scene_get_source(parent_scene));
 			obs_scene_release(parent_scene);
 			start_monitoring_parent_scene(src, parent_scene);
 		}
 
-		obs_frontend_remove_event_callback(
-			source_defaults_frontend_event_cb, src);
+		obs_frontend_remove_event_callback(source_defaults_frontend_event_cb, src);
 	}
 }
 
@@ -483,24 +445,19 @@ static void source_created_cb(void *data, calldata_t *cd)
 	obs_weak_source_release(src->parent_source_weak);
 	src->parent_source_weak = obs_source_get_weak_source(parent_source);
 	if (!parent_source) {
-		obs_log(LOG_WARNING,
-		     "Filter has no parent source, so new source was skipped.");
+		obs_log(LOG_WARNING, "Filter has no parent source, so new source was skipped.");
 		return;
-	} else if (obs_source_get_output_flags(parent_source) &
-		   OBS_SOURCE_COMPOSITE) {
+	} else if (obs_source_get_output_flags(parent_source) & OBS_SOURCE_COMPOSITE) {
 		signal_handler_t *sh = obs_get_signal_handler();
-		signal_handler_disconnect(sh, "source_create",
-					  source_created_cb, src);
+		signal_handler_disconnect(sh, "source_create", source_created_cb, src);
 		sh = obs_source_get_signal_handler(src->source);
-		signal_handler_disconnect(sh, "enable", source_defaults_enable,
-					  src);
+		signal_handler_disconnect(sh, "enable", source_defaults_enable, src);
 		obs_enum_scenes(all_scenes_item_add_disconnect, src);
 		return;
 	}
 
 	// should be same type
-	if (strcmp(obs_source_get_id(parent_source), obs_source_get_id(dst)) !=
-	    0) {
+	if (strcmp(obs_source_get_id(parent_source), obs_source_get_id(dst)) != 0) {
 		return;
 	}
 	if (obs_source_get_type(dst) != OBS_SOURCE_TYPE_INPUT) {
@@ -517,26 +474,22 @@ static void source_created_cb(void *data, calldata_t *cd)
 	   */
 	obs_data_t *dst_properties = obs_source_get_settings(dst);
 	obs_log(LOG_DEBUG, "dst json: %s", obs_data_get_json(dst_properties));
-	already_encountered =
-		obs_data_get_bool(dst_properties, ENCOUNTERED_KEY);
+	already_encountered = obs_data_get_bool(dst_properties, ENCOUNTERED_KEY);
 	if (!already_encountered) {
-		const char *dst_properties_json =
-			obs_data_get_json(dst_properties);
+		const char *dst_properties_json = obs_data_get_json(dst_properties);
 		const char *dst_id = obs_source_get_unversioned_id(dst);
 
 		// Except media sources because drag-and-drop already
 		// sets properties before the signal is propagated
 		if (strcmp(dst_id, "ffmpeg_source") != 0 || strcmp(dst_id, "image_source") != 0) {
-			already_encountered =
-				strcmp(dst_properties_json, "{}") != 0;
+			already_encountered = strcmp(dst_properties_json, "{}") != 0;
 		}
 		// If the new source has non-default settings (not "{}")
 		// consider it already encountered, but still write the
 		// ENCOUNTERED_KEY, so that if the user resets its properties
 		// to default, next callback execution will see it as already encountered.
 		if (already_encountered || !src->options[COPY_PROPERTIES]) {
-			obs_data_set_bool(dst_properties, ENCOUNTERED_KEY,
-					  true);
+			obs_data_set_bool(dst_properties, ENCOUNTERED_KEY, true);
 			obs_source_update(dst, dst_properties);
 		}
 	}
@@ -548,16 +501,14 @@ static void source_created_cb(void *data, calldata_t *cd)
 	if (src->options[COPY_PROPERTIES]) {
 		obs_data_t *settings = obs_source_get_settings(parent_source);
 		if (!already_encountered) {
-			obs_data_set_bool(dst_properties, ENCOUNTERED_KEY,
-					  true);
+			obs_data_set_bool(dst_properties, ENCOUNTERED_KEY, true);
 		}
 		obs_source_update(dst, settings);
 		obs_data_release(settings);
 
 #ifndef NDEBUG
 		dst_properties = obs_source_get_settings(dst);
-		obs_log(LOG_DEBUG, "dst json2: %s",
-		     obs_data_get_json(dst_properties));
+		obs_log(LOG_DEBUG, "dst json2: %s", obs_data_get_json(dst_properties));
 		obs_data_release(dst_properties);
 #endif // !NDEBUG
 	}
@@ -565,8 +516,7 @@ static void source_created_cb(void *data, calldata_t *cd)
 		obs_source_enum_filters(parent_source, enum_filters, dst);
 	}
 	if (src->options[COPY_AUDIO_MONITORING]) {
-		enum obs_monitoring_type monitoring =
-			obs_source_get_monitoring_type(parent_source);
+		enum obs_monitoring_type monitoring = obs_source_get_monitoring_type(parent_source);
 		obs_source_set_monitoring_type(dst, monitoring);
 	}
 	if (src->options[COPY_VOLUME]) {
@@ -589,8 +539,7 @@ static void source_created_cb(void *data, calldata_t *cd)
 		uint32_t tracks = obs_source_get_audio_mixers(parent_source);
 		obs_source_set_audio_mixers(dst, tracks);
 	}
-	if (any_true(src->sceneitem_options,
-		     OBS_COUNTOF(src->sceneitem_options))) {
+	if (any_true(src->sceneitem_options, OBS_COUNTOF(src->sceneitem_options))) {
 		obs_weak_source_release(src->dst_source_weak);
 		src->dst_source_weak = obs_source_get_weak_source(dst);
 	}
@@ -608,8 +557,7 @@ static void source_created_cb(void *data, calldata_t *cd)
 		}
 		dstr_free(&new_name);
 	}
-	log_changes(src, obs_source_get_name(dst), obs_source_get_name(dst),
-		    false);
+	log_changes(src, obs_source_get_name(dst), obs_source_get_name(dst), false);
 }
 
 static void source_defaults_update(void *data, obs_data_t *settings)
@@ -620,30 +568,24 @@ static void source_defaults_update(void *data, obs_data_t *settings)
 		src->options[i] = obs_data_get_bool(settings, option_keys[i]);
 	}
 	for (size_t i = 0; i < OBS_COUNTOF(sceneitem_option_keys); i++) {
-		src->sceneitem_options[i] =
-			obs_data_get_bool(settings, sceneitem_option_keys[i]);
+		src->sceneitem_options[i] = obs_data_get_bool(settings, sceneitem_option_keys[i]);
 	}
 	const char *new_name = obs_data_get_string(settings, S_PARENT_SCENE);
-	bool parent_scene_changed = strcmp(new_name, src->parent_scene_name) !=
-				    0;
+	bool parent_scene_changed = strcmp(new_name, src->parent_scene_name) != 0;
 	bfree(src->parent_scene_name);
 	src->parent_scene_name = bstrdup(new_name);
 	if (loaded && parent_scene_changed) {
-		obs_source_t *old_scene_source =
-			obs_weak_source_get_source(src->parent_scene_weak);
+		obs_source_t *old_scene_source = obs_weak_source_get_source(src->parent_scene_weak);
 		if (old_scene_source) {
-			obs_scene_t *old_scene =
-				obs_scene_from_source(old_scene_source);
+			obs_scene_t *old_scene = obs_scene_from_source(old_scene_source);
 			stop_monitoring_parent_scene(src, old_scene);
 			obs_source_release(old_scene_source);
 		}
 
-		obs_scene_t *parent_scene =
-			obs_get_scene_by_name(src->parent_scene_name);
+		obs_scene_t *parent_scene = obs_get_scene_by_name(src->parent_scene_name);
 		obs_weak_source_release(src->parent_scene_weak);
 		if (parent_scene) {
-			src->parent_scene_weak = obs_source_get_weak_source(
-				obs_scene_get_source(parent_scene));
+			src->parent_scene_weak = obs_source_get_weak_source(obs_scene_get_source(parent_scene));
 			obs_scene_release(parent_scene);
 			start_monitoring_parent_scene(src, parent_scene);
 		}
@@ -653,8 +595,7 @@ static void source_defaults_update(void *data, obs_data_t *settings)
 	src->apply_name_settings = obs_data_get_bool(settings, S_NAME_SETTINGS);
 	bfree(src->prefix);
 	src->prefix = bstrdup(obs_data_get_string(settings, S_PREFIX));
-	src->prefix_if_not_yet_applied =
-		obs_data_get_bool(settings, S_PREFIX_NOT_YET_APPLIED);
+	src->prefix_if_not_yet_applied = obs_data_get_bool(settings, S_PREFIX_NOT_YET_APPLIED);
 }
 
 static void source_defaults_save(void *data, obs_data_t *settings)
@@ -677,16 +618,12 @@ static obs_properties_t *source_defaults_properties(void *data)
 	obs_weak_source_release(src->parent_source_weak);
 	src->parent_source_weak = obs_source_get_weak_source(parent_source);
 	if (obs_source_get_output_flags(parent_source) & OBS_SOURCE_COMPOSITE) {
-		obs_properties_add_text(
-			props, "description",
-			"This filter can not be applied on scenes and groups",
-			OBS_TEXT_INFO);
+		obs_properties_add_text(props, "description", "This filter can not be applied on scenes and groups",
+					OBS_TEXT_INFO);
 		signal_handler_t *sh = obs_get_signal_handler();
-		signal_handler_disconnect(sh, "source_create",
-					  source_created_cb, src);
+		signal_handler_disconnect(sh, "source_create", source_created_cb, src);
 		sh = obs_source_get_signal_handler(src->source);
-		signal_handler_disconnect(sh, "enable", source_defaults_enable,
-					  src);
+		signal_handler_disconnect(sh, "enable", source_defaults_enable, src);
 		obs_enum_scenes(all_scenes_item_add_disconnect, src);
 		return props;
 	}
@@ -699,41 +636,31 @@ static obs_properties_t *source_defaults_properties(void *data)
 		OBS_TEXT_INFO);
 
 	for (int i = 0; i < 2; i++) {
-		obs_properties_add_bool(props, option_keys[i],
-					option_labels[i]);
+		obs_properties_add_bool(props, option_keys[i], option_labels[i]);
 	}
 
 	if (obs_source_get_output_flags(parent_source) & OBS_SOURCE_AUDIO) {
 		for (size_t i = 2; i < OBS_COUNTOF(option_keys); i++) {
-			obs_properties_add_bool(props, option_keys[i],
-						option_labels[i]);
+			obs_properties_add_bool(props, option_keys[i], option_labels[i]);
 		}
 	}
 
 	/* Scene Item Settings */
-	obs_properties_add_group(props, S_SCENEITEM_SETTINGS,
-				 T_SCENEITEM_SETTINGS, OBS_GROUP_NORMAL,
+	obs_properties_add_group(props, S_SCENEITEM_SETTINGS, T_SCENEITEM_SETTINGS, OBS_GROUP_NORMAL,
 				 sceneitem_settings_group);
 	obs_property_t *parent_scene_list = obs_properties_add_list(
-		sceneitem_settings_group, S_PARENT_SCENE, T_PARENT_SCENE,
-		OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
-	obs_property_set_long_description(parent_scene_list,
-					  T_PARENT_SCENE_LONG_DESC);
+		sceneitem_settings_group, S_PARENT_SCENE, T_PARENT_SCENE, OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
+	obs_property_set_long_description(parent_scene_list, T_PARENT_SCENE_LONG_DESC);
 	obs_property_list_add_string(parent_scene_list, "--select scene--", "");
 	fill_scene_list(parent_scene_list);
 	for (size_t i = 0; i < OBS_COUNTOF(sceneitem_option_keys); i++) {
-		obs_properties_add_bool(sceneitem_settings_group,
-					sceneitem_option_keys[i],
-					sceneitem_option_labels[i]);
+		obs_properties_add_bool(sceneitem_settings_group, sceneitem_option_keys[i], sceneitem_option_labels[i]);
 	}
 
 	/* Source Name Prefix */
-	obs_properties_add_group(props, S_NAME_SETTINGS, T_NAME_SETTINGS,
-				 OBS_GROUP_CHECKABLE, name_settings_group);
-	obs_properties_add_text(name_settings_group, S_PREFIX, T_PREFIX,
-				OBS_TEXT_DEFAULT);
-	obs_properties_add_bool(name_settings_group, S_PREFIX_NOT_YET_APPLIED,
-				T_PREFIX_NOT_YET_APPLIED);
+	obs_properties_add_group(props, S_NAME_SETTINGS, T_NAME_SETTINGS, OBS_GROUP_CHECKABLE, name_settings_group);
+	obs_properties_add_text(name_settings_group, S_PREFIX, T_PREFIX, OBS_TEXT_DEFAULT);
+	obs_properties_add_bool(name_settings_group, S_PREFIX_NOT_YET_APPLIED, T_PREFIX_NOT_YET_APPLIED);
 	return props;
 }
 
@@ -743,8 +670,7 @@ static void source_defaults_get_defaults(obs_data_t *settings)
 		obs_data_set_default_bool(settings, option_keys[i], true);
 	}
 	for (size_t i = 0; i < OBS_COUNTOF(sceneitem_option_keys); i++) {
-		obs_data_set_default_bool(settings, sceneitem_option_keys[i],
-					  true);
+		obs_data_set_default_bool(settings, sceneitem_option_keys[i], true);
 	}
 	obs_data_set_default_bool(settings, S_NAME_SETTINGS, true);
 	obs_data_set_default_bool(settings, S_PREFIX_NOT_YET_APPLIED, true);
@@ -754,11 +680,9 @@ static void _source_defaults_enable(struct source_defaults *src, bool enabled)
 {
 	signal_handler_t *sh = obs_get_signal_handler();
 	if (enabled) {
-		signal_handler_connect(sh, "source_create", source_created_cb,
-				       src);
+		signal_handler_connect(sh, "source_create", source_created_cb, src);
 	} else {
-		signal_handler_disconnect(sh, "source_create",
-					  source_created_cb, src);
+		signal_handler_disconnect(sh, "source_create", source_created_cb, src);
 	}
 }
 
@@ -802,8 +726,7 @@ static void *source_defaults_create(obs_data_t *settings, obs_source_t *source)
 	if (loaded) {
 		obs_enum_scenes(all_scenes_item_add, src);
 	} else {
-		obs_frontend_add_event_callback(
-			source_defaults_frontend_event_cb, src);
+		obs_frontend_add_event_callback(source_defaults_frontend_event_cb, src);
 	}
 
 	return src;
