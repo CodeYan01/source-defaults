@@ -21,7 +21,7 @@ with this program. If not, see <https://www.gnu.org/licenses/>
 #include <util/dstr.h>
 #include <util/base.h>
 
-#include "plugin-macros.generated.h"
+#include "plugin-support.h"
 
 // so that old sources don't return with an empty settings object,
 // thus letting us distinguish between "new" sources and recreated sources due to undo/redo
@@ -190,8 +190,8 @@ static void copy_transform(obs_sceneitem_t *src, obs_sceneitem_t *dst)
 {
 	obs_sceneitem_defer_update_begin(dst);
 	struct obs_transform_info info;
-	obs_sceneitem_get_info(src, &info);
-	obs_sceneitem_set_info(dst, &info);
+	obs_sceneitem_get_info2(src, &info);
+	obs_sceneitem_set_info2(dst, &info);
 
 	struct obs_sceneitem_crop crop;
 	obs_sceneitem_get_crop(src, &crop);
