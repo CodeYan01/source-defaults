@@ -1,6 +1,6 @@
 This project is based on https://github.com/obsproject/obs-plugintemplate
 
-Last updated to 013ffcaeec8158ba2e30697e1a9fdf1cdd622370
+Last updated to 7c017427c9ee2accc74be525e3cbf2ace5549b6c
 
 To update to a newer template commit:
 
